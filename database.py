@@ -36,6 +36,13 @@ class Database:
             )
         ''')
 
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS admins (
+                username TEXT PRIMARY KEY,
+                chat_id INTEGER NOT NULL
+            )
+        ''')
+
         cursor.execute('SELECT COUNT(*) FROM admin_settings')
         if cursor.fetchone()[0] == 0:
             cursor.execute('INSERT INTO admin_settings (id, notifications_enabled) VALUES (1, 1)')
@@ -149,3 +156,23 @@ class Database:
         enabled = bool(cursor.fetchone()[0])
         conn.close()
         return enabled
+
+    def save_admin_chat_id(self, username: str, chat_id: int):
+        """Сохранить chat_id админа"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO admins (username, chat_id)
+            VALUES (?, ?)
+        ''', (username, chat_id))
+        conn.commit()
+        conn.close()
+
+    def get_admin_chat_ids(self) -> List[int]:
+        """Получить все chat_id админов"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT chat_id FROM admins')
+        chat_ids = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return chat_ids

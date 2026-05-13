@@ -34,6 +34,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Проверка на админа
     if username in ADMIN_USERNAMES:
+        # Сохраняем chat_id админа для уведомлений
+        db.save_admin_chat_id(username, user_id)
+
         keyboard = [
             [InlineKeyboardButton("👨‍💼 Админ-панель", callback_data="admin_panel")]
         ]
@@ -321,6 +324,7 @@ async def cancel_appointment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
 
     user_id = update.effective_user.id
+    username = update.effective_user.username or "Без username"
     appointment = db.get_user_appointment(user_id)
 
     if not appointment:
@@ -334,6 +338,29 @@ async def cancel_appointment(update: Update, context: ContextTypes.DEFAULT_TYPE)
             "✅ Запись успешно отменена.\n\n"
             "Для новой записи используйте команду /start"
         )
+
+        # Уведомление админам об отмене
+        if db.are_notifications_enabled():
+            admin_text = (
+                f"🔔 <b>Запись отменена!</b>\n\n"
+                f"👤 {appointment['fio']}\n"
+                f"💬 @{username}\n"
+                f"📱 {appointment['phone']}\n"
+                f"🏛 {appointment['university']}\n"
+                f"📅 {format_date(appointment['date'])}\n"
+                f"🕐 {appointment['time_slot']}"
+            )
+
+            admin_chat_ids = db.get_admin_chat_ids()
+            for admin_chat_id in admin_chat_ids:
+                try:
+                    await context.bot.send_message(
+                        chat_id=admin_chat_id,
+                        text=admin_text,
+                        parse_mode='HTML'
+                    )
+                except Exception as e:
+                    logger.error(f"Не удалось отправить уведомление админу {admin_chat_id}: {e}")
     else:
         await query.edit_message_text("❌ Ошибка при отмене записи.")
 
