@@ -544,6 +544,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Запуск бота"""
+    import os
+
     application = Application.builder().token(BOT_TOKEN).build()
 
     # ConversationHandler для записи
@@ -573,8 +575,18 @@ def main():
     application.add_handler(CallbackQueryHandler(admin_toggle_notifications, pattern='^admin_toggle_notifications$'))
     application.add_handler(CallbackQueryHandler(cancel_appointment, pattern='^cancel_appointment$'))
 
-    logger.info("Бот запущен!")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    # Webhook режим для Railway
+    WEBHOOK_URL = "https://web-production-bce1f.up.railway.app"
+    PORT = int(os.environ.get('PORT', 8443))
+
+    logger.info(f"Бот запущен в webhook режиме на порту {PORT}")
+
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path="webhook",
+        webhook_url=f"{WEBHOOK_URL}/webhook"
+    )
 
 if __name__ == '__main__':
     main()
