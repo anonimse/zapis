@@ -362,13 +362,16 @@ async def cancel_appointment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     appointment = db.get_user_appointment(user_id)
 
     if not appointment:
-        await query.edit_message_text("❌ У вас нет активной записи.")
+        await query.message.reply_text("❌ У вас нет активной записи.")
         return
 
     success = db.delete_appointment(user_id, appointment['date'], appointment['time_slot'])
 
     if success:
-        await query.edit_message_text(
+        # Удаляем кнопку с сообщения
+        await query.edit_message_reply_markup(reply_markup=None)
+
+        await query.message.reply_text(
             "✅ Запись успешно отменена.\n\n"
             "Для новой записи используйте команду /start"
         )
@@ -396,7 +399,7 @@ async def cancel_appointment(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 except Exception as e:
                     logger.error(f"Не удалось отправить уведомление админу {admin_chat_id}: {e}")
     else:
-        await query.edit_message_text("❌ Ошибка при отмене записи.")
+        await query.message.reply_text("❌ Ошибка при отмене записи.")
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Админ-панель"""
