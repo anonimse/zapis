@@ -305,16 +305,50 @@ async def final_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if db.are_notifications_enabled():
         await notify_admins(context, f"📝 Новая запись!\n\n{format_appointment_info(data['university'], data['fio'], data['phone'], data['telegram_nick'], format_date(data['date']), data['time_slot'])}")
 
-    keyboard = [[InlineKeyboardButton("❌ Отменить запись", callback_data="cancel_appointment")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
+    # Первое сообщение - подтверждение записи
     await query.edit_message_text(
         "✅ <b>Запись подтверждена!</b>\n\n"
         f"{format_appointment_info(data['university'], data['fio'], data['phone'], data['telegram_nick'], format_date(data['date']), data['time_slot'])}\n\n"
         "Ждем вас в назначенное время!",
-        reply_markup=reply_markup,
         parse_mode='HTML'
     )
+
+    # Второе сообщение - информация о приеме
+    info_text = (
+        "Спасибо за запись! До встречи! 😊\n\n"
+        "В день приёма, пожалуйста, приходите за 5 минут до назначенного времени по адресу:\n\n"
+        "📍 Конная улица, 5/3\n"
+        "Координаты: 59.928571, 30.374747\n"
+        "Вход — с Невского проспекта, дом 154 (карта прилагается).\n\n"
+        "<b>Как пройти:</b>\n\n"
+        "Спуститесь в полуподвальное помещение.\n\n"
+        "Пройдите прямо до конца, затем поверните направо — увидите коричневую дверь.\n\n"
+        "Спросите Валерию Олеговну.\n\n"
+        "🙏 Большая просьба — здоровайтесь с людьми в помещении и будьте максимально вежливыми!\n\n"
+        "⚠️ <b>Важные правила:</b>\n"
+        "Опоздания больше чем на 5 минут — не допускаются. Такие посетители принимаются только в конце дня при наличии свободного времени.\n\n"
+        "Пожалуйста, не приходите раньше своего времени, чтобы не создавать толпу и не мешать сотрудникам в офисе.\n\n"
+        "Если вы понимаете, что вы не сможете быть-ОБЯЗАТЕЛЬНО отменяйте свою запись\n\n"
+        "Спасибо за понимание! Ждём вас ❤️"
+    )
+
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=info_text,
+        parse_mode='HTML'
+    )
+
+    # Третье сообщение - карта с кнопкой отмены
+    keyboard = [[InlineKeyboardButton("❌ Отменить запись", callback_data="cancel_appointment")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    with open('1.jpg', 'rb') as photo:
+        await context.bot.send_photo(
+            chat_id=user_id,
+            photo=photo,
+            caption="📍 Карта проезда",
+            reply_markup=reply_markup
+        )
 
     return ConversationHandler.END
 
